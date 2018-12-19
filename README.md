@@ -1,2 +1,2 @@
-# tidy_tuesday
-My reports on the weekly dataset found at https://github.com/rfordatascience/tidytuesday
+# Tidy Tuesday
+My reports on the weekly datasets found at https://github.com/rfordatascience/tidytuesday
