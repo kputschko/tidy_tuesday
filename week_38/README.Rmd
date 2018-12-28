@@ -1,0 +1,107 @@
+---
+title: "Tidy Tuesday / Week 28"
+author: "Kevin Putschko"
+date: "December 19, 2018"
+output: 
+  html_document:
+    keep_md: TRUE
+---
+
+```{r setup, include=FALSE}
+
+# Packages
+pacman::p_load(tidyverse, ggridges, lubridate)
+pacman::p_load_gh("kputschko/kp.helpers")
+
+# Data
+tidy_url <- "https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2018-12-18/allCetaceanData.csv"
+data_raw <- suppressWarnings(tidy_url %>% read_csv())
+```
+
+### Cetacean Data
+
+The data set has `r nrow(data)` rows and `r ncol(data)` columns.  This data comes from [The Pudding](https://pudding.cool/2017/07/cetaceans/), and is available on the [TidyTuesday GitHub](https://github.com/rfordatascience/tidytuesday/tree/master/data/2018-12-18).
+
+The data relates to whales and dolphins that spent some time in captivitiy in the US between 1938 and 2017.  
+
+```{r}
+data_raw %>% glimpse()
+
+data_raw %>% fx_describe()
+data_raw %>% count(species, sort = TRUE)
+data_raw %>% count(region, sort = TRUE)
+data_raw %>% count(birthYear, sort = TRUE) 
+data_raw %>% count(sex, sort = TRUE) 
+data_raw %>% count(acquisition, sort = TRUE)
+data_raw %>% count(currently, sort = TRUE) 
+data_raw %>% count(status, sort = TRUE) 
+
+# father / mother > name
+# originLocation > transfers > currently
+# status > statusDate
+# acquisition / gender > acquisition / origin
+# survival rate - origin (captive v born)
+
+
+data_prep <- 
+  data_raw %>% 
+  mutate(birth_year = birthYear %>% parse_number(),
+         origin_year = originDate %>% floor_date("year")) %>% 
+  select(-X1, -birthYear)
+
+data_prep %>% 
+  count(species) %>% 
+  top_n(wt = n, n = 5) %>% 
+  ggplot() +
+  aes(x = reorder(species, n), y = n, fill = species) +
+  geom_col(color = "black") +
+  coord_flip() +
+  scale_y_log10() +
+  scale_fill_viridis_d() +
+  labs(x = NULL, y = NULL, title = "Top 5 Cetaceans in Captivity") +
+  guides(fill = "none") +
+  theme_kp()
+
+data_prep %>% 
+  ggplot() +
+  aes(x = birth_year, fill = accuracy, color = accuracy) +
+  geom_density(alpha = 0.50) +
+  labs(x = "Birth Year", y = "Density", title = "Estimated Year of Birth") +
+  scale_fill_discrete(name = "Accuracy of Birth Year", 
+                      labels = c("a" = "Actual", "e" = "Estimated", "u" = "Unknown"), 
+                      aesthetics = c("color", "fill")) +
+  theme_kp()
+
+data_prep %>% 
+  ggplot() +
+  aes(x = sex, fill = sex) +
+  geom_bar() +
+  labs(y = NULL, x = NULL, title = "Cetaceans by Sex") +
+  guides(fill = "none") +
+  scale_x_discrete(labels = c("F" = "Female", "M" = "Male", "U" = "Unknown")) +
+  theme_kp()
+
+data_prep %>% 
+  ggplot() +
+  aes(x = birth_year, y = reorder(acquisition, birth_year), fill = acquisition) +
+  geom_density_ridges(panel_scaling = FALSE) +
+  guides(fill = "none") +
+  labs(y = NULL, x = NULL, title = "Acquisition of Captive Cetaceans by Year") +
+  theme_kp()  
+
+
+data_prep %>% 
+  filter(acquisition %in% c("Capture", "Rescue", "Born")) %>%
+  
+  ggplot() +
+  aes(x = origin_year, fill = str_to_upper(acquisition)) +
+  geom_bar(color = "black") +
+  geom_vline(xintercept = as.Date("1963-01-01"), linetype = "dashed", color = "black", size = 1) +
+  geom_vline(xintercept = as.Date("1973-01-01"), linetype = "dashed", color = "black", size = 1) +
+  labs(x = NULL, y = NULL, fill = NULL) +
+  scale_fill_viridis_d(begin = 0.4, end = 1) +
+  theme_kp() +
+  theme(legend.position = "bottom")
+
+```
+
